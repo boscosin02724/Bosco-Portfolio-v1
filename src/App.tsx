@@ -10,6 +10,7 @@ import { HahaluluProjectPage } from "./components/HahaluluProjectPage";
 import { Hero } from "./components/Hero";
 import { MplusProjectPage } from "./components/MplusProjectPage";
 import { Projects } from "./components/Projects";
+import { ScrollStory } from "./components/ScrollStory";
 import { Services } from "./components/Services";
 import { Workflow } from "./components/Workflow";
 import { SiteCursor } from "./components/SiteCursor";
@@ -111,6 +112,7 @@ export default function App() {
       <main>
         <About />
         <Projects />
+        <ScrollStory />
         <Services />
         <Workflow />
         <Contact />
