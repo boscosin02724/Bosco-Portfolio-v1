@@ -40,7 +40,12 @@ export function ScrollStory() {
     const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
     if (isTouchDevice) {
       preloadVideo();
+      video.loop = true;
+      video.play().catch(() => {
+        // The poster remains visible if a browser blocks the media request.
+      });
       return () => {
+        video.pause();
         window.removeEventListener("scroll", preloadWhenNear);
         window.removeEventListener("resize", preloadWhenNear);
       };
