@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { projects } from "../data/portfolio";
+import { animationProjects, projects } from "../data/portfolio";
 import { SectionHeader } from "./SectionHeader";
 import { VisualAsset } from "./VisualAsset";
 
@@ -16,10 +16,36 @@ export function Projects() {
         {projects.map((project) => {
           const projectKey = project.name;
           const isLightCard = "textTone" in project && project.textTone === "dark";
+          const isAnimationProject = "slug" in project && project.slug === "3d-animation";
           const className = `project-card project-${project.scale}${isLightCard ? " project-card-light" : ""}`;
           const content = (
             <>
-              <VisualAsset tone={project.tone} label={project.name} image={"image" in project ? project.image : undefined} />
+              {isAnimationProject ? (
+                <div className="animation-home-cover" aria-hidden="true">
+                  <div className="animation-home-cover-orbit animation-home-cover-orbit-one" />
+                  <div className="animation-home-cover-orbit animation-home-cover-orbit-two" />
+                  <div className="animation-home-cover-wall">
+                    {animationProjects.map((animationProject, index) => (
+                      <div
+                        key={animationProject.slug}
+                        className="animation-home-cover-card"
+                        style={{ "--cover-index": index } as React.CSSProperties}
+                      >
+                        <img
+                          src={`/thumbnails/3d-home/${animationProject.slug}.jpg`}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="animation-home-cover-glow" />
+                  <span className="animation-home-cover-code">06 / SELECTED WORLDS</span>
+                </div>
+              ) : (
+                <VisualAsset tone={project.tone} label={project.name} image={"image" in project ? project.image : undefined} />
+              )}
               <div className="project-overlay">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-white/62">{project.category}</p>

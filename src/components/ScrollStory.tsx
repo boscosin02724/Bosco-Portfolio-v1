@@ -4,6 +4,9 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const storyVideoSource = "/storytelling/artscrollvideo02.mp4";
+const storyVideoDuration = 4.8;
+
 export function ScrollStory() {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -16,14 +19,82 @@ export function ScrollStory() {
       return;
     }
 
+    const preloadVideo = () => {
+      if (video.getAttribute("src")) return;
+      video.src = video.dataset.src ?? storyVideoSource;
+      video.preload = "auto";
+      video.load();
+    };
+
+    const preloadWhenNear = () => {
+      const distanceFromViewport = section.getBoundingClientRect().top - window.innerHeight;
+      if (distanceFromViewport > 3200) return;
+      preloadVideo();
+      window.removeEventListener("scroll", preloadWhenNear);
+      window.removeEventListener("resize", preloadWhenNear);
+    };
+
+    preloadWhenNear();
+    window.addEventListener("scroll", preloadWhenNear, { passive: true });
+    window.addEventListener("resize", preloadWhenNear);
+
     const context = gsap.context(() => {
-      let metadataHandler: (() => void) | null = null;
+      let seekFrame = 0;
 
       const initScrollVideo = () => {
-        const duration = video.duration || 1;
+        const duration = Number.isFinite(video.duration) ? video.duration : storyVideoDuration;
+        const lastFrameTime = Math.max(0, duration - 0.04);
+        let targetTime = 0;
+        let renderedTime = 0;
+        let previousFrameTime = window.performance.now();
+        let previousSeekTime = 0;
+
         video.pause();
-        gsap.set(video, { currentTime: 0 });
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+          video.currentTime = 0;
+        }
         gsap.set([".scroll-story-panel"], { autoAlpha: 0, y: 26 });
+
+        const renderVideoTime = (frameTime: number) => {
+          const frameDelta = Math.min(64, frameTime - previousFrameTime);
+          const smoothing = 1 - Math.pow(0.035, frameDelta / 1000);
+          const difference = targetTime - renderedTime;
+
+          previousFrameTime = frameTime;
+          renderedTime += difference * smoothing;
+
+          if (frameTime - previousSeekTime >= 1000 / 30) {
+            if (video.readyState >= HTMLMediaElement.HAVE_METADATA && Math.abs(video.currentTime - renderedTime) > 0.008) {
+              video.currentTime = Math.max(0, Math.min(lastFrameTime, renderedTime));
+            }
+            previousSeekTime = frameTime;
+          }
+
+          if (Math.abs(targetTime - renderedTime) > 0.006) {
+            seekFrame = window.requestAnimationFrame(renderVideoTime);
+          } else {
+            renderedTime = targetTime;
+            if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+              video.currentTime = Math.max(0, Math.min(lastFrameTime, targetTime));
+            }
+            seekFrame = 0;
+          }
+        };
+
+        const seekToProgress = (progress: number) => {
+          targetTime = Math.max(0, Math.min(lastFrameTime, progress * lastFrameTime));
+          if (!seekFrame) {
+            previousFrameTime = window.performance.now();
+            seekFrame = window.requestAnimationFrame(renderVideoTime);
+          }
+        };
+
+        const syncLoadedVideo = () => {
+          renderedTime = targetTime;
+          video.currentTime = Math.max(0, Math.min(lastFrameTime, targetTime));
+        };
+
+        video.addEventListener("loadedmetadata", syncLoadedVideo);
 
         const timeline = gsap.timeline({
           scrollTrigger: {
@@ -40,8 +111,16 @@ export function ScrollStory() {
         const progressState = { value: 0 };
 
         timeline
-          .to(progressState, { value: 1, duration: 1, ease: "none" }, 0)
-          .to(video, { currentTime: duration, duration: 0.64, ease: "none" }, 0)
+          .to(
+            progressState,
+            {
+              value: 1,
+              duration: 1,
+              ease: "none",
+              onUpdate: () => seekToProgress(progressState.value),
+            },
+            0,
+          )
           .fromTo(
             ".scroll-story-beyond",
             { autoAlpha: 0, y: 28 },
@@ -72,23 +151,24 @@ export function ScrollStory() {
           );
 
         ScrollTrigger.refresh();
+        return () => video.removeEventListener("loadedmetadata", syncLoadedVideo);
       };
 
-      if (video.readyState >= 1) {
-        initScrollVideo();
-      } else {
-        metadataHandler = initScrollVideo;
-        video.addEventListener("loadedmetadata", metadataHandler, { once: true });
-      }
+      const cleanupScrollVideo = initScrollVideo();
 
       return () => {
-        if (metadataHandler) {
-          video.removeEventListener("loadedmetadata", metadataHandler);
+        if (seekFrame) {
+          window.cancelAnimationFrame(seekFrame);
         }
+        cleanupScrollVideo();
       };
     }, section);
 
-    return () => context.revert();
+    return () => {
+      window.removeEventListener("scroll", preloadWhenNear);
+      window.removeEventListener("resize", preloadWhenNear);
+      context.revert();
+    };
   }, []);
 
   return (
@@ -97,11 +177,13 @@ export function ScrollStory() {
         <video
           ref={videoRef}
           className="scroll-story-video"
-          src="/storytelling/artscrollvideo02.mp4"
+          data-src={storyVideoSource}
           poster="/storytelling/artscroll-poster.svg"
-          preload="metadata"
+          preload="none"
           muted
           playsInline
+          disablePictureInPicture
+          aria-hidden="true"
         />
         <div className="scroll-story-overlay" />
 

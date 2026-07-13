@@ -1,14 +1,11 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { About } from "./components/About";
-import { BosidengProjectPage } from "./components/BosidengProjectPage";
 import { Contact } from "./components/Contact";
-import { DjSnakeProjectPage } from "./components/DjSnakeProjectPage";
-import { FrenchMayMonalisaProjectPage } from "./components/FrenchMayMonalisaProjectPage";
-import { HahaluluProjectPage } from "./components/HahaluluProjectPage";
 import { Hero } from "./components/Hero";
-import { MplusProjectPage } from "./components/MplusProjectPage";
+import { PageTransition } from "./components/PageTransition";
 import { Projects } from "./components/Projects";
 import { ScrollStory } from "./components/ScrollStory";
 import { Services } from "./components/Services";
@@ -17,15 +14,28 @@ import { SiteCursor } from "./components/SiteCursor";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function App() {
-  const appRef = useRef<HTMLDivElement>(null);
-  const pathname = window.location.pathname;
-  const isBosidengProject = pathname === "/projects/bosideng-50th-anniversary-exhibition";
-  const isHahaluluProject = pathname === "/projects/hahalulu-mgm-macau";
-  const isMplusProject = pathname === "/projects/mplus-gala";
-  const isDjSnakeProject = pathname === "/projects/dj-snake-live-in-hong-kong";
-  const isFrenchMayMonalisaProject = pathname === "/projects/french-may-monalisa-merch";
+const BosidengProjectPage = lazy(() =>
+  import("./components/BosidengProjectPage").then((module) => ({ default: module.BosidengProjectPage })),
+);
+const HahaluluProjectPage = lazy(() =>
+  import("./components/HahaluluProjectPage").then((module) => ({ default: module.HahaluluProjectPage })),
+);
+const MplusProjectPage = lazy(() =>
+  import("./components/MplusProjectPage").then((module) => ({ default: module.MplusProjectPage })),
+);
+const DjSnakeProjectPage = lazy(() =>
+  import("./components/DjSnakeProjectPage").then((module) => ({ default: module.DjSnakeProjectPage })),
+);
+const FrenchMayMonalisaProjectPage = lazy(() =>
+  import("./components/FrenchMayMonalisaProjectPage").then((module) => ({ default: module.FrenchMayMonalisaProjectPage })),
+);
+const ThreeDAnimationProjectPage = lazy(() =>
+  import("./components/ThreeDAnimationProjectPage").then((module) => ({
+    default: module.ThreeDAnimationProjectPage,
+  })),
+);
 
+function AppMotionEffects({ rootRef }: { rootRef: RefObject<HTMLDivElement | null> }) {
   useEffect(() => {
     const context = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
@@ -55,16 +65,69 @@ export default function App() {
           },
         });
       });
-    }, appRef);
+    }, rootRef);
 
     return () => context.revert();
+  }, [rootRef]);
+
+  return null;
+}
+
+function ProjectFallback() {
+  return <div className="min-h-screen bg-ink" aria-hidden="true" />;
+}
+
+function RouteReadySignal() {
+  useLayoutEffect(() => {
+    document.documentElement.dataset.routeReady = "true";
+    window.dispatchEvent(new Event("bosco:route-ready"));
+
+    return () => {
+      delete document.documentElement.dataset.routeReady;
+    };
   }, []);
+
+  return null;
+}
+
+function usePathname() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const updatePathname = () => setPathname(window.location.pathname);
+
+    window.addEventListener("popstate", updatePathname);
+    window.addEventListener("bosco:route-change", updatePathname);
+
+    return () => {
+      window.removeEventListener("popstate", updatePathname);
+      window.removeEventListener("bosco:route-change", updatePathname);
+    };
+  }, []);
+
+  return pathname;
+}
+
+export default function App() {
+  const appRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const isBosidengProject = pathname === "/projects/bosideng-50th-anniversary-exhibition";
+  const isHahaluluProject = pathname === "/projects/hahalulu-mgm-macau";
+  const isMplusProject = pathname === "/projects/mplus-gala";
+  const isDjSnakeProject = pathname === "/projects/dj-snake-live-in-hong-kong";
+  const isFrenchMayMonalisaProject = pathname === "/projects/french-may-monalisa-merch";
+  const isThreeDAnimationProject = pathname === "/projects/3d-animation";
 
   if (isBosidengProject) {
     return (
       <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
         <SiteCursor />
-        <BosidengProjectPage />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <BosidengProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
       </div>
     );
   }
@@ -73,7 +136,12 @@ export default function App() {
     return (
       <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
         <SiteCursor />
-        <HahaluluProjectPage />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <HahaluluProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
       </div>
     );
   }
@@ -82,7 +150,12 @@ export default function App() {
     return (
       <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
         <SiteCursor />
-        <MplusProjectPage />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <MplusProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
       </div>
     );
   }
@@ -91,7 +164,12 @@ export default function App() {
     return (
       <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
         <SiteCursor />
-        <DjSnakeProjectPage />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <DjSnakeProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
       </div>
     );
   }
@@ -100,7 +178,26 @@ export default function App() {
     return (
       <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
         <SiteCursor />
-        <FrenchMayMonalisaProjectPage />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <FrenchMayMonalisaProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
+      </div>
+    );
+  }
+
+  if (isThreeDAnimationProject) {
+    return (
+      <div ref={appRef} className="min-h-screen bg-ink text-white selection:bg-accent selection:text-white">
+        <SiteCursor />
+        <PageTransition />
+        <Suspense fallback={<ProjectFallback />}>
+          <ThreeDAnimationProjectPage />
+          <RouteReadySignal key={`ready-${pathname}`} />
+          <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
+        </Suspense>
       </div>
     );
   }
@@ -108,6 +205,7 @@ export default function App() {
   return (
     <div ref={appRef} className="min-h-screen bg-paper text-ink selection:bg-accent selection:text-white">
       <SiteCursor />
+      <PageTransition />
       <Hero />
       <main>
         <About />
@@ -117,6 +215,8 @@ export default function App() {
         <Workflow />
         <Contact />
       </main>
+      <RouteReadySignal key={`ready-${pathname}`} />
+      <AppMotionEffects key={`motion-${pathname}`} rootRef={appRef} />
     </div>
   );
 }

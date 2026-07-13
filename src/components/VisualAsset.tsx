@@ -7,7 +7,9 @@ type VisualAssetProps = {
 export function VisualAsset({ tone, label, image }: VisualAssetProps) {
   return (
     <div className={`visual-asset visual-${tone}${image ? " visual-has-image" : ""}`} aria-label={label}>
-      {image ? <img className="visual-image" src={image} alt={label ?? ""} /> : null}
+      {image ? (
+        <img className="visual-image" src={image} alt={label ?? ""} loading="lazy" decoding="async" />
+      ) : null}
       <div className="visual-grid" />
       <div className="visual-slab visual-slab-one" />
       <div className="visual-slab visual-slab-two" />

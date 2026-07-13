@@ -12,8 +12,12 @@ export function Contact() {
       <div data-reveal className="mx-auto w-full max-w-studio">
         <p className="text-xs uppercase tracking-[0.34em] text-muted">Contact</p>
         <h2 className="contact-title mt-8 max-w-6xl font-display text-[clamp(4rem,11vw,12rem)] leading-[0.86]">
-          Let's Build Something Extraordinary.
+          <span>Let’s shape</span>
+          <span>what comes next.</span>
         </h2>
+        <p className="contact-supporting-line">
+          Open to opportunities and collaborations across AI, motion, visual identity and spatial experiences.
+        </p>
         <div className="mt-12 flex flex-wrap gap-3">
           {contactLinks.map(({ label, href, icon: Icon }) => (
             <a key={label} href={href} className="contact-button" target="_blank" rel="noreferrer">

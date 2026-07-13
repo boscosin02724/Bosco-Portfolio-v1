@@ -3,21 +3,52 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { MobileNavPanel, NavDropdowns } from "./NavDropdowns";
 import { useNavContrast } from "./useNavContrast";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const heroNav = ["Work", "About", "Contact", "Resume"];
-const mobileHeroNav = ["Work", "About", "Contact", "Resume"];
 const morphWords = ["Stories", "Graphics", "Motions", "Experiences"];
 
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
+  const showreelRef = useRef<HTMLVideoElement>(null);
   const [morphWord, setMorphWord] = useState(morphWords[0]);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
   const isNavOnLight = useNavContrast(navRef);
+
+  useEffect(() => {
+    const video = showreelRef.current;
+    if (!video) return;
+
+    let hasSignalled = false;
+    const signalReady = () => {
+      if (hasSignalled) return;
+      hasSignalled = true;
+      document.documentElement.dataset.heroVideoReady = "true";
+      window.dispatchEvent(new Event("bosco:hero-video-ready"));
+    };
+
+    video.addEventListener("canplay", signalReady, { once: true });
+    video.addEventListener("error", signalReady, { once: true });
+
+    if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      window.requestAnimationFrame(signalReady);
+    } else {
+      video.load();
+    }
+
+    const fallbackTimer = window.setTimeout(signalReady, 7000);
+
+    return () => {
+      video.removeEventListener("canplay", signalReady);
+      video.removeEventListener("error", signalReady);
+      window.clearTimeout(fallbackTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const context = gsap.context(() => {
@@ -71,7 +102,7 @@ export function Hero() {
     <section ref={sectionRef} id="top" className="hero-scroll bg-paper text-white">
       <nav
         ref={navRef}
-        className={`hero-glass-nav${isMobileNavOpen ? " is-mobile-open" : ""}${isNavOnLight ? " nav-on-light" : ""}`}
+        className={`hero-glass-nav${isMobileNavOpen ? " is-mobile-open" : ""}${isMobileDetailOpen ? " is-mobile-detail-open" : ""}${isNavOnLight ? " nav-on-light" : ""}`}
         aria-label="Primary navigation"
       >
         <a href="#top" className="hero-glass-logo" aria-label="Bosco Sin home">
@@ -83,42 +114,37 @@ export function Hero() {
           type="button"
           aria-expanded={isMobileNavOpen}
           aria-controls="hero-mobile-nav-links"
-          onClick={() => setIsMobileNavOpen((isOpen) => !isOpen)}
+          onClick={() =>
+            setIsMobileNavOpen((isOpen) => {
+              if (isOpen) setIsMobileDetailOpen(false);
+              return !isOpen;
+            })
+          }
         >
           {isMobileNavOpen ? "X" : "Menu"}
         </button>
-        {heroNav.map((item) => (
-          <a
-            key={item}
-            className="hero-nav-link hero-desktop-link"
-            href={item === "Resume" ? "/BOSCOSIN_CV_26JUL.pdf" : `#${item.toLowerCase()}`}
-            target={item === "Resume" ? "_blank" : undefined}
-            rel={item === "Resume" ? "noreferrer" : undefined}
-            onClick={() => setIsMobileNavOpen(false)}
-          >
-            {item}
-          </a>
-        ))}
-        {mobileHeroNav.map((item) => (
-          <a
-            key={`mobile-${item}`}
-            className="hero-nav-link hero-mobile-link"
-            href={item === "Resume" ? "/BOSCOSIN_CV_26JUL.pdf" : `#${item.toLowerCase()}`}
-            target={item === "Resume" ? "_blank" : undefined}
-            rel={item === "Resume" ? "noreferrer" : undefined}
-            id={item === "Work" ? "hero-mobile-nav-links" : undefined}
-            onClick={() => setIsMobileNavOpen(false)}
-          >
-            {item}
-          </a>
-        ))}
+        <NavDropdowns />
+        <MobileNavPanel
+          id="hero-mobile-nav-links"
+          isOpen={isMobileNavOpen}
+          onDetailChange={setIsMobileDetailOpen}
+          onNavigate={() => setIsMobileNavOpen(false)}
+        />
       </nav>
       <div className="hero-sticky">
         <div className="hero-content">
           <div ref={canvasRef} className="hero-canvas" aria-label="Showreel canvas">
             <div className="hero-video-frame">
               <div className="showreel-fallback" />
-              <video className="showreel-video" autoPlay loop muted playsInline preload="metadata">
+              <video
+                ref={showreelRef}
+                className="showreel-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+              >
                 <source src="/showreel.mp4" type="video/mp4" />
               </video>
             </div>
