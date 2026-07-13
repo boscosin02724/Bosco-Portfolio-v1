@@ -16,6 +16,7 @@ export function Hero() {
   const navRef = useRef<HTMLElement>(null);
   const showreelRef = useRef<HTMLVideoElement>(null);
   const [morphWord, setMorphWord] = useState(morphWords[0]);
+  const [isShowreelPlaying, setIsShowreelPlaying] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
   const isNavOnLight = useNavContrast(navRef);
@@ -32,6 +33,7 @@ export function Hero() {
       window.dispatchEvent(new Event("bosco:hero-video-ready"));
     };
 
+    video.addEventListener("loadedmetadata", signalReady, { once: true });
     video.addEventListener("canplay", signalReady, { once: true });
     video.addEventListener("error", signalReady, { once: true });
 
@@ -41,7 +43,7 @@ export function Hero() {
       video.load();
     }
 
-    const fallbackTimer = window.setTimeout(signalReady, 7000);
+    const fallbackTimer = window.setTimeout(signalReady, 1800);
 
     return () => {
       video.removeEventListener("canplay", signalReady);
@@ -134,7 +136,7 @@ export function Hero() {
       <div className="hero-sticky">
         <div className="hero-content">
           <div ref={canvasRef} className="hero-canvas" aria-label="Showreel canvas">
-            <div className="hero-video-frame">
+            <div className={`hero-video-frame${isShowreelPlaying ? " is-video-playing" : ""}`}>
               <div className="showreel-fallback" />
               <video
                 ref={showreelRef}
@@ -145,6 +147,8 @@ export function Hero() {
                 playsInline
                 preload="auto"
                 poster="/storytelling/artscroll-poster.svg"
+                onPlaying={() => setIsShowreelPlaying(true)}
+                onError={() => setIsShowreelPlaying(false)}
               >
                 <source src="/showreel.mp4" type="video/mp4" />
               </video>

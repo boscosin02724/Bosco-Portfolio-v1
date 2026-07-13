@@ -677,6 +677,11 @@ a {
   object-fit: cover;
   object-position: center;
   border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.42s ease-out;
+}
+
+.hero-video-frame.is-video-playing .showreel-video {
   opacity: 1;
 }
 

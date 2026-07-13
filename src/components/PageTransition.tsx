@@ -173,7 +173,9 @@ export function PageTransition() {
       });
     }, 150);
 
-    const fallbackTimer = window.setTimeout(finishPreload, 7000);
+    // Never let a production media request keep the whole homepage covered.
+    // The hero has its own visual fallback when the showreel cannot be decoded.
+    const fallbackTimer = window.setTimeout(finishPreload, 2400);
     window.addEventListener("bosco:hero-video-ready", finishPreload);
 
     if (document.documentElement.dataset.heroVideoReady === "true") {
