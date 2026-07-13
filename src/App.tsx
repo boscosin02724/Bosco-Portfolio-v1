@@ -7,7 +7,6 @@ import { Contact } from "./components/Contact";
 import { Hero } from "./components/Hero";
 import { PageTransition } from "./components/PageTransition";
 import { Projects } from "./components/Projects";
-import { ScrollStory } from "./components/ScrollStory";
 import { Services } from "./components/Services";
 import { Workflow } from "./components/Workflow";
 import { SiteCursor } from "./components/SiteCursor";
@@ -210,7 +209,6 @@ export default function App() {
       <main>
         <About />
         <Projects />
-        <ScrollStory />
         <Services />
         <Workflow />
         <Contact />
