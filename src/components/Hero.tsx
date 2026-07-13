@@ -144,6 +144,7 @@ export function Hero() {
                 muted
                 playsInline
                 preload="auto"
+                poster="/storytelling/artscroll-poster.svg"
               >
                 <source src="/showreel.mp4" type="video/mp4" />
               </video>
