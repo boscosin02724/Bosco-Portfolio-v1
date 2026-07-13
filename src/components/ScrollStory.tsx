@@ -34,18 +34,68 @@ export function ScrollStory() {
       window.removeEventListener("resize", preloadWhenNear);
     };
 
-    // ScrollTrigger pinning plus iPadOS rubber-banding can leave a stale pin
-    // spacer at the end of the document. Touch devices get the same visual
-    // story as a normal, scrollable viewport instead of a pinned scrub scene.
+    // iPad Chrome can corrupt GSAP's generated pin spacer at the end of a long
+    // page. On touch hardware, use a native sticky viewport instead: scrolling
+    // still scrubs the film and holds the story before the next section, but
+    // no artificial spacer is ever added to the document.
     const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
     if (isTouchDevice) {
       preloadVideo();
-      video.loop = true;
-      video.play().catch(() => {
-        // The poster remains visible if a browser blocks the media request.
-      });
+      video.pause();
+
+      const panels = {
+        beyond: section.querySelector<HTMLElement>(".scroll-story-beyond"),
+        practice: section.querySelector<HTMLElement>(".scroll-story-practice"),
+        ending: section.querySelector<HTMLElement>(".scroll-story-ending"),
+      };
+      let frame = 0;
+
+      const clamp = (value: number) => Math.min(1, Math.max(0, value));
+      const fade = (progress: number, enterStart: number, enterEnd: number, exitStart?: number, exitEnd?: number) => {
+        const entering = clamp((progress - enterStart) / (enterEnd - enterStart));
+        if (exitStart === undefined || exitEnd === undefined) return entering;
+        return entering * (1 - clamp((progress - exitStart) / (exitEnd - exitStart)));
+      };
+      const setPanel = (panel: HTMLElement | null, opacity: number, direction = 1) => {
+        if (!panel) return;
+        panel.style.opacity = String(opacity);
+        panel.style.visibility = opacity > 0.01 ? "visible" : "hidden";
+        panel.style.transform = `translate(-50%, calc(-50% + ${(1 - opacity) * 28 * direction}px))`;
+      };
+      const update = () => {
+        frame = 0;
+        const rect = section.getBoundingClientRect();
+        const travel = Math.max(1, section.offsetHeight - window.innerHeight);
+        const progress = clamp(-rect.top / travel);
+        const duration = Number.isFinite(video.duration) ? video.duration : storyVideoDuration;
+        const targetTime = Math.max(0, Math.min(duration - 0.04, progress * (duration - 0.04)));
+
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA && Math.abs(video.currentTime - targetTime) > 0.035) {
+          video.currentTime = targetTime;
+        }
+
+        const beyond = fade(progress, 0.2, 0.24, 0.4, 0.44);
+        const practice = fade(progress, 0.48, 0.52, 0.59, 0.63);
+        const ending = fade(progress, 0.67, 0.75);
+        setPanel(panels.beyond, beyond, beyond < 0.5 ? 1 : -1);
+        setPanel(panels.practice, practice, practice < 0.5 ? 1 : -1);
+        setPanel(panels.ending, ending);
+      };
+      const scheduleUpdate = () => {
+        if (!frame) frame = window.requestAnimationFrame(update);
+      };
+
+      video.addEventListener("loadedmetadata", scheduleUpdate);
+      window.addEventListener("scroll", scheduleUpdate, { passive: true });
+      window.addEventListener("resize", scheduleUpdate);
+      scheduleUpdate();
+
       return () => {
         video.pause();
+        video.removeEventListener("loadedmetadata", scheduleUpdate);
+        window.removeEventListener("scroll", scheduleUpdate);
+        window.removeEventListener("resize", scheduleUpdate);
+        if (frame) window.cancelAnimationFrame(frame);
         window.removeEventListener("scroll", preloadWhenNear);
         window.removeEventListener("resize", preloadWhenNear);
       };
