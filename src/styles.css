@@ -2160,24 +2160,6 @@ a {
   background: #050505;
 }
 
-@media (pointer: coarse) {
-  html,
-  body {
-    overscroll-behavior-y: none;
-  }
-
-  .scroll-story {
-    min-height: 100svh;
-    overflow: hidden;
-  }
-
-  .scroll-story-sticky {
-    position: relative !important;
-    height: 100svh;
-    min-height: 100svh;
-  }
-}
-
 .scroll-story-video {
   position: absolute;
   inset: 0;
