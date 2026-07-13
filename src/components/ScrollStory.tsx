@@ -34,6 +34,18 @@ export function ScrollStory() {
       window.removeEventListener("resize", preloadWhenNear);
     };
 
+    // ScrollTrigger pinning plus iPadOS rubber-banding can leave a stale pin
+    // spacer at the end of the document. Touch devices get the same visual
+    // story as a normal, scrollable viewport instead of a pinned scrub scene.
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+    if (isTouchDevice) {
+      preloadVideo();
+      return () => {
+        window.removeEventListener("scroll", preloadWhenNear);
+        window.removeEventListener("resize", preloadWhenNear);
+      };
+    }
+
     preloadWhenNear();
     window.addEventListener("scroll", preloadWhenNear, { passive: true });
     window.addEventListener("resize", preloadWhenNear);
