@@ -44,7 +44,7 @@
 
 :root {
   color: #080808;
-  background: #080808;
+  background: #f7f5f0;
   font-synthesis: none;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
@@ -67,7 +67,7 @@ body {
   min-width: 320px;
   max-width: 100%;
   overflow-x: hidden;
-  background: #080808;
+  background: #f7f5f0;
   font-family: var(--font-sans);
   scrollbar-width: none;
 }
@@ -76,6 +76,7 @@ body {
   min-height: 100%;
   max-width: 100%;
   overflow-x: clip;
+  background: #f7f5f0;
 }
 
 html::-webkit-scrollbar,

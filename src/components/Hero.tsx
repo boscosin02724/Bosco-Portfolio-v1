@@ -32,23 +32,39 @@ export function Hero() {
       document.documentElement.dataset.heroVideoReady = "true";
       window.dispatchEvent(new Event("bosco:hero-video-ready"));
     };
+    const startPlayback = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.setAttribute("muted", "");
+      video.play().then(() => setIsShowreelPlaying(true)).catch(() => setIsShowreelPlaying(false));
+    };
 
     video.addEventListener("loadedmetadata", signalReady, { once: true });
     video.addEventListener("canplay", signalReady, { once: true });
     video.addEventListener("error", signalReady, { once: true });
+    video.addEventListener("loadeddata", startPlayback);
+    video.addEventListener("canplay", startPlayback);
 
     if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      window.requestAnimationFrame(signalReady);
+      window.requestAnimationFrame(() => {
+        signalReady();
+        startPlayback();
+      });
     } else {
       video.load();
     }
 
     const fallbackTimer = window.setTimeout(signalReady, 1800);
+    const playbackRetry = window.setTimeout(startPlayback, 900);
 
     return () => {
+      video.removeEventListener("loadedmetadata", signalReady);
       video.removeEventListener("canplay", signalReady);
       video.removeEventListener("error", signalReady);
+      video.removeEventListener("loadeddata", startPlayback);
+      video.removeEventListener("canplay", startPlayback);
       window.clearTimeout(fallbackTimer);
+      window.clearTimeout(playbackRetry);
     };
   }, []);
 
